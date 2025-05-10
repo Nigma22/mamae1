@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memorylit</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #1a1a1a;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      display: flex;
+      width: 90%;
+      height: 90vh;
+      max-width: 1400px;
+      gap: 20px;
+    }
+    .left, .right {
+      flex: 1;
+      padding: 20px;
+      background-color: #2a2a2a;
+      border-radius: 10px;
+    }
+    .right {
+      border: 2px solid #00b7eb;
+      position: relative;
+    }
+    h2 {
+      margin-top: 0;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 15px;
+      margin: 15px 0;
+      background-color: #3a3a3a;
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      font-size: 1.1em;
+    }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      text-align: center;
+    }
+    .calendar div {
+      padding: 10px;
+      background-color: #3a3a3a;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .calendar div:hover {
+      background-color: #4a4a4a;
+    }
+    .calendar .selected {
+      background-color: #00b7eb;
+    }
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #3a3a3a;
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #4a4a4a;
+    }
+    .preview-title, .preview-date, .preview-message {
+      margin-top: 20px;
+      font-size: 1.5em;
+      text-align: center;
+    }
+    .preview-photos {
+      margin-top: 20px;
+      position: relative;
+      height: 300px; /* Increased height for larger photos */
+      overflow: hidden;
+    }
+    .preview-photos img {
+      position: absolute;
+      width: 100%; /* Larger photos */
+      height: 100%;
+      object-fit: contain;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+    }
+    .preview-photos img.active {
+      opacity: 1;
+    }
+    .qr-code {
+      margin-top: 20px;
+      text-align: center;
+      display: none;
+    }
+    .qr-code img {
+      max-width: 300px; /* Larger QR code */
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="left">
+      <div id="step1">
+        <h2>Título da página</h2>
+        <p>Escreva o título da página. (Usado no link para acessar). Ex: Gabriel & Clara ou Feliz Aniversário ou etc</p>
+        <input type="text" id="titleInput" placeholder="Escreva o título aqui...">
+        <div class="buttons">
+          <button onclick="nextStep()">Próxima etapa</button>
+        </div>
+      </div>
+      <div id="step2" style="display: none;">
+        <h2>Fotos</h2>
+        <p>Selecione fotos para personalizar a página. Adicione quantas quiser.</p>
+        <input type="file" id="photoInput" accept="image/*" multiple>
+        <div class="buttons">
+          <button onclick="prevStep()">Voltar etapa</button>
+          <button onclick="nextStep()">Próxima etapa</button>
+        </div>
+      </div>
+      <div id="step3" style="display: none;">
+        <h2>Contador de tempo</h2>
+        <p>Selecione a data de início para a contagem regressiva.</p>
+        <div class="calendar" id="calendar">
+          <div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div><div>D</div>
+          <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div>
+          <div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div>
+          <div>15</div><div>16</div><div>17</div><div>18</div><div>19</div><div>20</div><div>21</div>
+          <div>22</div><div>23</div><div>24</div><div>25</div><div>26</div><div>27</div><div>28</div>
+          <div>29</div><div>30</div><div>31</div>
+        </div>
+        <div class="buttons">
+          <button onclick="prevStep()">Voltar etapa</button>
+          <button onclick="nextStep()">Próxima etapa</button>
+        </div>
+      </div>
+      <div id="step4" style="display: none;">
+        <h2>Mensagem</h2>
+        <p>Escreva uma mensagem especial.</p>
+        <textarea id="messageInput" placeholder="Escreva sua mensagem aqui..."></textarea>
+        <div class="buttons">
+          <button onclick="prevStep()">Voltar etapa</button>
+          <button onclick="nextStep()">Finalizar</button>
+        </div>
+      </div>
+    </div>
+    <div class="right">
+      <div id="previewTitle" class="preview-title"></div>
+      <div id="previewPhotos" class="preview-photos"></div>
+      <div id="previewDate" class="preview-date"></div>
+      <div id="previewMessage" class="preview-message"></div>
+    </div>
+  </div>
+
+  <script>
+    let currentStep = 1;
+    const steps = [
+      document.getElementById('step1'),
+      document.getElementById('step2'),
+      document.getElementById('step3'),
+      document.getElementById('step4')
+    ];
+    let photos = [];
+    let currentPhotoIndex = 0;
+    let countdownInterval;
+
+    // Real-time updates
+    document.getElementById('titleInput').addEventListener('input', updatePreview);
+    document.getElementById('messageInput').addEventListener('input', updatePreview);
+
+    // Photo upload
+    const photoInput = document.getElementById('photoInput');
+    photoInput.addEventListener('change', function(e) {
+      photos = Array.from(e.target.files); // No limit on photos
+      currentPhotoIndex = 0;
+      updatePhotos();
+    });
+
+    // Calendar selection
+    const calendarDays = document.querySelectorAll('.calendar div');
+    let selectedDate = '';
+    calendarDays.forEach(day => {
+      if (!isNaN(day.textContent)) {
+        day.addEventListener('click', () => {
+          calendarDays.forEach(d => d.classList.remove('selected'));
+          day.classList.add('selected');
+          selectedDate = day.textContent;
+          updatePreview();
+          startCountdown();
+        });
+      }
+    });
+
+    function nextStep() {
+      if (currentStep < 4) {
+        steps[currentStep - 1].style.display = 'none';
+        steps[currentStep].style.display = 'block';
+        currentStep++;
+        updatePreview();
+      } else if (currentStep === 4) {
+        generateQR();
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        steps[currentStep - 1].style.display = 'none';
+        steps[currentStep - 2].style.display = 'block';
+        currentStep--;
+        if (currentStep < 3 && countdownInterval) {
+          clearInterval(countdownInterval);
+        }
+        updatePreview();
+      }
+    }
+
+    function updatePreview() {
+      const title = document.getElementById('titleInput').value || 'Te amo';
+      const message = document.getElementById('messageInput').value || '';
+      document.getElementById('previewTitle').textContent = title;
+      document.getElementById('previewMessage').textContent = message;
+    }
+
+    function updatePhotos() {
+      const previewPhotos = document.getElementById('previewPhotos');
+      previewPhotos.innerHTML = '';
+      if (photos.length > 0) {
+        photos.forEach((file, index) => {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            if (index === currentPhotoIndex) {
+              img.classList.add('active');
+            }
+            previewPhotos.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        });
+
+        if (photos.length > 1) {
+          setInterval(() => {
+            const images = previewPhotos.querySelectorAll('img');
+            images[currentPhotoIndex].classList.remove('active');
+            currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
+            images[currentPhotoIndex].classList.add('active');
+          }, 2000);
+        }
+      }
+    }
+
+    function startCountdown() {
+      if (!selectedDate) return;
+      const targetDate = new Date(`2025-05-${selectedDate}T00:00:00`);
+      if (countdownInterval) clearInterval(countdownInterval);
+
+      countdownInterval = setInterval(() => {
+        const now = new Date();
+        const diff = targetDate - now;
+        if (diff <= 0) {
+          clearInterval(countdownInterval);
+          document.getElementById('previewDate').textContent = 'Data alcançada!';
+          return;
+        }
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        document.getElementById('previewDate').textContent = `${hours}h ${minutes}m ${seconds}s`;
+      }, 1000);
+    }
+
+    function generateQR() {
+      const message = document.getElementById('messageInput').value || 'Te amo';
+      // Replace the entire page with QR code view
+      document.body.innerHTML = `
+        <div style="display:flex;justify-content:center;align-items:center;height:100vh;background-color:#1a1a1a;color:#fff;text-align:center;padding:20px;">
+          <div>
+            <h2 id="qrStatus">Gerando QR Code...</h2>
+            <div id="qrCode" style="margin-top:20px;"></div>
+          </div>
+        </div>
+      `;
+
+      // Create the message page content
+      const messagePageContent = `<html><body style="background-color:#1a1a1a;color:#fff;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;"><div><h2>Você recebeu uma mensagem</h2><button onclick="document.getElementById('msg').style.display='block';this.style.display='none';" style="padding:10px 20px;background-color:#3a3a3a;border:none;border-radius:5px;color:#fff;cursor:pointer;">Ver</button><div id="msg" style="display:none;margin-top:20px;"><p style="font-size:1.5em;">${message}</p></div></div></body></html>`;
+      const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(messagePageContent)}`.replace(/'/g, "%27").replace(/"/g, "%22");
+
+      // Generate QR code
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataUrl)}`;
+      fetch(qrCodeUrl)
+        .then(response => {
+          if (response.ok) {
+            document.getElementById('qrCode').innerHTML = `<img src="${qrCodeUrl}" alt="QR Code">`;
+            document.getElementById('qrStatus').textContent = 'QR Code gerado, mande para quem você ama';
+          } else {
+            document.getElementById('qrCode').innerHTML = '<p>Falha ao gerar QR Code. Tente novamente.</p>';
+          }
+        })
+        .catch(() => {
+          document.getElementById('qrCode').innerHTML = '<p>Falha ao gerar QR Code. Tente novamente.</p>';
+        });
+    }
+  </script>
+</body>
+</html>
